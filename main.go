@@ -4,8 +4,8 @@ package main
 
 import (
 	"fmt"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
+	//	"github.com/aws/aws-sdk-go/aws"
+	//	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/cloudwatch"
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
@@ -13,57 +13,79 @@ import (
 	"github.com/prometheus/prometheus/prompb"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"time"
 )
 
 var (
-	//	ServerAddr = "0.0.0.0:1234"
-	AwsRegion = "us-east-1"
-	Namespace = "Fetcher"
+	// should be exported as cloudwatch metrics
+	ServerAddr = "0.0.0.0:1234"
+	AwsRegion  = "us-east-1"
+	Namespace  = "Fetcher"
 )
 
 func main() {
-	Conn := cloudwatch.New(session.New(), &aws.Config{Region: aws.String(AwsRegion)})
-	writeToCloudWatch(Conn)
+	//	Conn := cloudwatch.New(session.New(), &aws.Config{Region: aws.String(AwsRegion)})
+	tsQueue := make(chan *prompb.TimeSeries)
+	go writeToCloudWatch(tsQueue)
+	fmt.Fprintf(os.Stderr, "listening on: %s\n", ServerAddr)
+	fmt.Fprintf(os.Stderr, "%v", runHTTPServer(ServerAddr, tsQueue))
 }
 
-func writeToCloudWatch(conn *cloudwatch.CloudWatch) {
-	// create and add a dummy metrics
-
-	dims := map[string]string{
-		"dim1": "cat",
-		"dim2": "dog",
+func getMetricDatum(ts *prompb.TimeSeries) ([]*cloudwatch.MetricDatum, error) {
+	if (len(ts.Labels)) > 10 {
+		return nil, fmt.Errorf("cloudwatch only allow 10 dimensions. got: %v", ts.Labels)
 	}
 
-	metricDatum := &cloudwatch.MetricDatum{}
-	metricDatum.SetMetricName("customuploadmetrics")
-	dimens := []*cloudwatch.Dimension{}
-	for k, v := range dims {
-		d := &cloudwatch.Dimension{}
-		d.SetName(k)
-		d.SetValue(v)
-		dimens = append(dimens, d)
+	m := make(model.Metric, len(ts.Labels))
+	for _, l := range ts.Labels {
+		m[model.LabelName(l.Name)] = model.LabelValue(l.Value)
 	}
 
-	metricDatum.SetDimensions(dimens)
-	metricDatum.SetTimestamp(time.Unix(1519644379, 0))
-	metricDatum.SetValue(0.050107)
-
-	fmt.Println(metricDatum.String())
-	metricData := cloudwatch.PutMetricDataInput{
-		Namespace:  &Namespace,
-		MetricData: []*cloudwatch.MetricDatum{metricDatum},
+	mName, ok := m[model.MetricNameLabel]
+	if !ok {
+		mName = "unnamed"
 	}
 
-	out, err := conn.PutMetricData(&metricData)
-	if err != nil {
-		panic(err)
+	// get extra dimensions
+	dims := []*cloudwatch.Dimension{}
+	for label, value := range m {
+		if label != model.MetricNameLabel {
+			d := &cloudwatch.Dimension{}
+			d.SetName(fmt.Sprint(label))
+			d.SetValue(fmt.Sprint(value))
+			dims = append(dims, d)
+		}
 	}
-	fmt.Println(out)
+
+	datumList := []*cloudwatch.MetricDatum{}
+
+	for _, sample := range ts.Samples {
+		datum := &cloudwatch.MetricDatum{}
+		datum.SetMetricName(fmt.Sprint(mName))
+		datum.SetDimensions(dims)
+
+		datum.SetTimestamp(time.Unix(0, sample.Timestamp))
+		datum.SetValue(sample.Value)
+		datumList = append(datumList, datum)
+	}
+
+	return datumList, nil
 }
 
-func runHTTPServer(addr string, metricsQueue chan<- model.Metric) {
+func writeToCloudWatch(tsQueue <-chan *prompb.TimeSeries) {
+	for ts := range tsQueue {
+		datumList, err := getMetricDatum(ts)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error converting metrics: %v", err)
+			continue
+		}
 
+		fmt.Println(datumList)
+	}
+}
+
+func runHTTPServer(addr string, tsQueue chan<- *prompb.TimeSeries) error {
 	http.HandleFunc("/receive", func(w http.ResponseWriter, r *http.Request) {
 		compressed, err := ioutil.ReadAll(r.Body)
 		if err != nil {
@@ -84,16 +106,9 @@ func runHTTPServer(addr string, metricsQueue chan<- model.Metric) {
 		}
 
 		for _, ts := range req.Timeseries {
-			m := make(model.Metric, len(ts.Labels))
-			for _, l := range ts.Labels {
-				m[model.LabelName(l.Name)] = model.LabelValue(l.Value)
-			}
-			fmt.Println(m)
-			for _, s := range ts.Samples {
-				fmt.Printf("  %f %d\n", s.Value, s.Timestamp)
-			}
+			tsQueue <- ts
 		}
 	})
 
-	http.ListenAndServe(addr, nil)
+	return http.ListenAndServe(addr, nil)
 }
