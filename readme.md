@@ -21,3 +21,17 @@ cloudwatch-writer is a small web server compatible with [Prometheus Remote Write
 remote_write:
   - url: "http://<ip addr>:1234/receive"
 ```
+
+
+### All Options
+```
+Usage:
+  cloudwatch-writer [flags]
+
+Flags:
+      --debug               enable debug output
+  -h, --help                help for cloudwatch-writer
+  -n, --namespace string    namespace for cloudwatch metrics
+      --region string       aws region
+  -s, --serveraddr string   server address listen for prometehus remote writes (default "0.0.0.0:1234")
+```

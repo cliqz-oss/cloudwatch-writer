@@ -59,6 +59,6 @@ func init() {
 	rootCmd.Flags().StringVarP(&serverAddr, "serveraddr", "s", "0.0.0.0:1234", "server address listen for prometehus remote writes")
 	rootCmd.Flags().StringVarP(&namespace, "namespace", "n", "", "namespace for cloudwatch metrics")
 	rootCmd.MarkFlagRequired("namespace")
-	rootCmd.Flags().StringVar(&region, "region", "", "aws reguion")
+	rootCmd.Flags().StringVar(&region, "region", "", "aws region")
 	rootCmd.MarkFlagRequired("region")
 }
