@@ -26,6 +26,7 @@ var (
 	serverAddr string
 	namespace  string
 	region     string
+	debug      bool
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -38,7 +39,7 @@ export metrics to cloudwatch.
 please note cloudwatch only allows at most 10 dimensions with a metric, and all metrices with more
 dimensions will be automatically ignored by this application`,
 	Run: func(cmd *cobra.Command, args []string) {
-		err := prom_cldwatch_writer.StartMetricExporter(serverAddr, namespace, region)
+		err := prom_cldwatch_writer.StartMetricExporter(serverAddr, namespace, region, debug)
 		fmt.Fprintf(os.Stderr, "error: %v", err)
 	},
 }
@@ -54,7 +55,7 @@ func Execute() {
 
 func init() {
 	// Here you will define your flags and configuration settings.
-
+	rootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "enable debug output")
 	rootCmd.Flags().StringVarP(&serverAddr, "serveraddr", "s", "0.0.0.0:1234", "server address listen for prometehus remote writes")
 	rootCmd.Flags().StringVarP(&namespace, "namespace", "n", "", "namespace for cloudwatch metrics")
 	rootCmd.MarkFlagRequired("namespace")

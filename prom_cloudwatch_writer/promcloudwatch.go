@@ -17,12 +17,17 @@ import (
 	"time"
 )
 
+var (
+	debug = false
+)
+
 // StartMetricExporter starts listening on serverAddr and will export metrics posted to Cloudwatch
 // with namespace and region awsRegion
-func StartMetricExporter(serverAddr, namespace, awsRegion string) error {
+func StartMetricExporter(serverAddr, namespace, awsRegion string, verbose bool) error {
+	debug = verbose
 	conn := cloudwatch.New(session.New(), &aws.Config{Region: aws.String(awsRegion)})
-	tsQueue := make(chan *prompb.TimeSeries)
-	go writeToCloudWatch(conn, tsQueue)
+	tsQueue := make(chan *prompb.TimeSeries, 10)
+	go writeToCloudWatch(conn, tsQueue, namespace)
 	fmt.Fprintf(os.Stderr, "listening on: %s\n", serverAddr)
 	return runHTTPServer(serverAddr, tsQueue)
 }
@@ -68,14 +73,36 @@ func getMetricDatum(ts *prompb.TimeSeries) ([]*cloudwatch.MetricDatum, error) {
 	return datumList, nil
 }
 
-func writeToCloudWatch(conn *cloudwatch.CloudWatch, tsQueue <-chan *prompb.TimeSeries) {
-	for ts := range tsQueue {
-		datumList, err := getMetricDatum(ts)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "error converting metrics: %v", err)
-			continue
+func writeToCloudWatch(conn *cloudwatch.CloudWatch, tsQueue <-chan *prompb.TimeSeries, namespace string) {
+	ticker := time.NewTicker(5 * time.Second)
+	datums := []*cloudwatch.MetricDatum{}
+	for {
+		select {
+		case ts := <-tsQueue:
+			datumList, err := getMetricDatum(ts)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "error converting metrics: %v \n", err)
+				break
+			}
+
+			for _, d := range datumList {
+				datums = append(datums, d)
+			}
+		case <-ticker.C:
+			metricData := &cloudwatch.PutMetricDataInput{
+				Namespace:  &namespace,
+				MetricData: datums,
+			}
+
+			if debug {
+				fmt.Printf("writing to cw: %v\n", metricData)
+			}
+
+			_, err := conn.PutMetricData(metricData)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "error: writing to cw: %v\n", err)
+			}
 		}
-		fmt.Println(datumList)
 	}
 }
 
@@ -84,6 +111,9 @@ func runHTTPServer(addr string, tsQueue chan<- *prompb.TimeSeries) error {
 		compressed, err := ioutil.ReadAll(r.Body)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
+			if debug {
+				fmt.Fprintf(os.Stderr, "request failed: %v\n", err)
+			}
 			return
 		}
 
