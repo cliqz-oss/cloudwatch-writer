@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/cliqz/cloudwatch-writer/prom_cloudwatch_writer"
 	"github.com/spf13/cobra"
 )
 
@@ -37,7 +38,8 @@ export metrics to cloudwatch.
 please note cloudwatch only allows at most 10 dimensions with a metric, and all metrices with more
 dimensions will be automatically ignored by this application`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("hello", serverAddr, namespace, region)
+		err := prom_cldwatch_writer.StartMetricExporter(serverAddr, namespace, region)
+		fmt.Fprintf(os.Stderr, "error: %v", err)
 	},
 }
 

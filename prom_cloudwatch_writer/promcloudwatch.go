@@ -19,12 +19,12 @@ import (
 
 // StartMetricExporter starts listening on serverAddr and will export metrics posted to Cloudwatch
 // with namespace and region awsRegion
-func StartMetricExporter(serverAddr, namespace, awsRegion string) {
+func StartMetricExporter(serverAddr, namespace, awsRegion string) error {
 	conn := cloudwatch.New(session.New(), &aws.Config{Region: aws.String(awsRegion)})
 	tsQueue := make(chan *prompb.TimeSeries)
 	go writeToCloudWatch(conn, tsQueue)
 	fmt.Fprintf(os.Stderr, "listening on: %s\n", serverAddr)
-	fmt.Fprintf(os.Stderr, "%v", runHTTPServer(serverAddr, tsQueue))
+	return runHTTPServer(serverAddr, tsQueue)
 }
 
 func getMetricDatum(ts *prompb.TimeSeries) ([]*cloudwatch.MetricDatum, error) {
