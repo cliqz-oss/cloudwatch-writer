@@ -25,7 +25,7 @@ var (
 )
 
 func main() {
-	//	Conn := cloudwatch.New(session.New(), &aws.Config{Region: aws.String(AwsRegion)})
+	conn := cloudwatch.New(session.New(), &aws.Config{Region: aws.String(AwsRegion)})
 	tsQueue := make(chan *prompb.TimeSeries)
 	go writeToCloudWatch(tsQueue)
 	fmt.Fprintf(os.Stderr, "listening on: %s\n", ServerAddr)
@@ -73,7 +73,7 @@ func getMetricDatum(ts *prompb.TimeSeries) ([]*cloudwatch.MetricDatum, error) {
 	return datumList, nil
 }
 
-func writeToCloudWatch(tsQueue <-chan *prompb.TimeSeries) {
+func writeToCloudWatch(conn *cloudwatch.Cloudwatch, tsQueue <-chan *prompb.TimeSeries) {
 	for ts := range tsQueue {
 		datumList, err := getMetricDatum(ts)
 		if err != nil {
@@ -81,7 +81,6 @@ func writeToCloudWatch(tsQueue <-chan *prompb.TimeSeries) {
 			continue
 		}
 
-		fmt.Println(datumList)
 	}
 }
 
