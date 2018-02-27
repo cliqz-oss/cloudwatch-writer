@@ -64,8 +64,7 @@ func getMetricDatum(ts *prompb.TimeSeries) ([]*cloudwatch.MetricDatum, error) {
 		datum := &cloudwatch.MetricDatum{}
 		datum.SetMetricName(fmt.Sprint(mName))
 		datum.SetDimensions(dims)
-
-		datum.SetTimestamp(time.Unix(0, sample.Timestamp))
+		datum.SetTimestamp(time.Unix(0, sample.Timestamp*1e6))
 		datum.SetValue(sample.Value)
 		datumList = append(datumList, datum)
 	}
