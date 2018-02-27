@@ -1,11 +1,11 @@
 // prom-cloudwatch-remote-writer writes incoming metrics from prometheus
 // (configured using remote_write config) to cloudwatch.
-package main
+package prom_cldwatch_writer
 
 import (
 	"fmt"
-	//	"github.com/aws/aws-sdk-go/aws"
-	//	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/cloudwatch"
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
@@ -17,19 +17,14 @@ import (
 	"time"
 )
 
-var (
-	// should be exported as cloudwatch metrics
-	ServerAddr = "0.0.0.0:1234"
-	AwsRegion  = "us-east-1"
-	Namespace  = "Fetcher"
-)
-
-func main() {
-	conn := cloudwatch.New(session.New(), &aws.Config{Region: aws.String(AwsRegion)})
+// StartMetricExporter starts listening on serverAddr and will export metrics posted to Cloudwatch
+// with namespace and region awsRegion
+func StartMetricExporter(serverAddr, namespace, awsRegion string) {
+	conn := cloudwatch.New(session.New(), &aws.Config{Region: aws.String(awsRegion)})
 	tsQueue := make(chan *prompb.TimeSeries)
-	go writeToCloudWatch(tsQueue)
-	fmt.Fprintf(os.Stderr, "listening on: %s\n", ServerAddr)
-	fmt.Fprintf(os.Stderr, "%v", runHTTPServer(ServerAddr, tsQueue))
+	go writeToCloudWatch(conn, tsQueue)
+	fmt.Fprintf(os.Stderr, "listening on: %s\n", serverAddr)
+	fmt.Fprintf(os.Stderr, "%v", runHTTPServer(serverAddr, tsQueue))
 }
 
 func getMetricDatum(ts *prompb.TimeSeries) ([]*cloudwatch.MetricDatum, error) {
@@ -73,14 +68,14 @@ func getMetricDatum(ts *prompb.TimeSeries) ([]*cloudwatch.MetricDatum, error) {
 	return datumList, nil
 }
 
-func writeToCloudWatch(conn *cloudwatch.Cloudwatch, tsQueue <-chan *prompb.TimeSeries) {
+func writeToCloudWatch(conn *cloudwatch.CloudWatch, tsQueue <-chan *prompb.TimeSeries) {
 	for ts := range tsQueue {
 		datumList, err := getMetricDatum(ts)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "error converting metrics: %v", err)
 			continue
 		}
-
+		fmt.Println(datumList)
 	}
 }
 
