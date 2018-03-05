@@ -2,6 +2,8 @@
 
 cloudwatch-writer is a small web server compatible with [Prometheus Remote Writer Endpoint](https://prometheus.io/docs/prometheus/latest/configuration/configuration/#<remote_write>) to export Prometheus metrics to cloudwatch.
 
+Prometheus is much powerful than cloudwatch when it comes to working with metrics, but cloudwatch integrates well with other aws services. This program bridges the gap.
+
 ## Known problems
 1. Cloudwatch only allows at most 10 dimensions for a metrics, metrics with more
    than 10 dimensions is ignored
@@ -35,3 +37,6 @@ Flags:
       --region string       aws region
   -s, --serveraddr string   server address listen for prometehus remote writes (default "0.0.0.0:1234")
 ```
+
+TODO:
+ - [ ] tests for more complex metrics.
