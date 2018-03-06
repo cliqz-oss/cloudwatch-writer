@@ -1,0 +1,23 @@
+language: go
+go:
+  - "1.10"
+
+before_install:
+  - curl -L "https://github.com/golang/dep/releases/download/v0.4.1/dep-linux-amd64" > ./dep
+  - chmod a+x ./dep
+
+install:
+  - ./dep ensure -v
+
+script:
+  - go test -v ./...
+
+deploy:
+  provider: script
+  script: bash upload_container.sh
+  on:
+    branch: master
+
+services:
+  - docker
+

@@ -1,5 +1,7 @@
 # Prometheus Cloudwatch Remote Writer
 
+[![Build Status](https://travis-ci.org/cliqz-oss/cloudwatch-writer.svg?branch=master)](https://travis-ci.org/cliqz-oss/cloudwatch-writer)
+
 cloudwatch-writer is a small web server compatible with [Prometheus Remote Writer Endpoint](https://prometheus.io/docs/prometheus/latest/configuration/configuration/#<remote_write>) to export Prometheus metrics to cloudwatch.
 
 Prometheus is much powerful than cloudwatch when it comes to working with metrics, but cloudwatch integrates well with other aws services. This program bridges the gap.
