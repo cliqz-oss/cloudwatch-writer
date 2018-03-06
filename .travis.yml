@@ -9,3 +9,7 @@ before_install:
 script:
   - dep ensure -v
   - go test -v ./...
+  - docker build .
+services:
+  - docker
+
