@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/cliqz/cloudwatch-writer/prom_cloudwatch_writer"
+	"github.com/cliqz-oss/cloudwatch-writer/prom_cloudwatch_writer"
 	"github.com/spf13/cobra"
 )
 

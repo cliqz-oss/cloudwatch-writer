@@ -6,7 +6,7 @@
 
 package main
 
-import "github.com/cliqz/cloudwatch-writer/cmd"
+import "github.com/cliqz-oss/cloudwatch-writer/cmd"
 
 func main() {
 	cmd.Execute()
