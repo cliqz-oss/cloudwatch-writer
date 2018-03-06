@@ -19,6 +19,12 @@ Prometheus is much powerful than cloudwatch when it comes to working with metric
 ./cloudwatch-writer --namespace MyNamespace --region us-east-1
 ```
 
+or with docker container
+
+```
+docker run dockercliqz/cloudwatch-writer:latest --namespace MyNamespace --region us-east-1
+```
+
 3. configure Prometheus to send remote write instances to the program. This can be achieved by adding following (sample) to the Prometheus config file
 
 ```
