@@ -1,6 +1,3 @@
-trigger:
-- master
-
 variables:
   GOBIN:  '$(GOPATH)/bin' # Go binaries path
   GOROOT: '/usr/local/go1.11' # Go installation path
@@ -28,3 +25,11 @@ steps:
     fi
   workingDirectory: '$(modulePath)'
   displayName: 'Download dep and run `dep ensure`'
+
+- script: go build -v .
+  workingDirectory: '$(modulePath)'
+  displayName: 'Build'
+
+- script: go test -v ./...
+  workingDirectory: '$(modulePath)'
+  displayName: 'Run tests'
