@@ -1,6 +1,6 @@
 # Prometheus Cloudwatch Remote Writer
 
-[![Build Status](https://travis-ci.org/cliqz-oss/cloudwatch-writer.svg?branch=master)](https://travis-ci.org/cliqz-oss/cloudwatch-writer)
+[![Build Status](https://dev.azure.com/cliqz-ci/cloudwatch-writer/_apis/build/status/cliqz-oss.cloudwatch-writer?branchName=master)](https://dev.azure.com/cliqz-ci/cloudwatch-writer/_build/latest?definitionId=8&branchName=master)
 
 cloudwatch-writer is a small web server compatible with [Prometheus Remote Writer Endpoint](https://prometheus.io/docs/prometheus/latest/configuration/configuration/#<remote_write>) to export Prometheus metrics to cloudwatch.
 
