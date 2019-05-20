@@ -33,3 +33,10 @@ steps:
 - script: go test -v ./...
   workingDirectory: '$(modulePath)'
   displayName: 'Run tests'
+
+- script: |
+    docker login -u "$(docherhub.username)" -p "$(dockerhub.password)";
+    docker build -t dockercliqz/cloudwatch-writer:latest .
+    docker push dockercliqz/cloudwatch-writer:latest
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
+  displayName: 'Push to Docker'
